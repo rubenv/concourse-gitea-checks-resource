@@ -61,8 +61,6 @@ if [ -z $target_url ]; then
     target_url="$ATC_EXTERNAL_URL/builds/$BUILD_ID"
 fi
 
-api_url="https://projects.garage61.org/api/v1/repos/Garage61/main/statuses/b90c43c236cbba0e9a6f40ef3ff7a45d52e9031a`"
-
 # Create version
 echo "Creating commit status"
 info=$(mktemp -t gitea-checks-resource-release.XXXXXX)
