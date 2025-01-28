@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+source=$1
+
+if [ -z "$source" ]; then
+  echo "usage: $0 <path/to/source>"
+  exit 1
+fi
+
+# Read inputs
+source=$1
+payload=$(mktemp -t gitea-checks-resource-request.XXXXXX)
+cat > $payload <&0
+
+# Parse parameters
+host=$(jq -r '.source.host // ""' < $payload)
+token=$(jq -r '.source.token // ""' < $payload)
+organization=$(jq -r '.source.organization // ""' < $payload)
+project=$(jq -r '.source.project // ""' < $payload)
+
+commit_from=$(jq -r '.params.commit_from // ""' < $payload)
+context=$(jq -r '.params.context // ""' < $payload)
+description=$(jq -r '.params.description // ""' < $payload)
+state=$(jq -r '.params.state // ""' < $payload)
+target_url=$(jq -r '.params.target_url // ""' < $payload)
+
+if [ -z $host ]; then
+    echo "No host specified!"
+    exit 1
+fi
+if [ -z $token ]; then
+    echo "No token specified!"
+    exit 1
+fi
+if [ -z $organization ]; then
+    echo "No organization specified!"
+    exit 1
+fi
+if [ -z $project ]; then
+    echo "No project specified!"
+    exit 1
+fi
+if [ -z $commit_from ]; then
+    echo "No commit file specified!"
+    exit 1
+fi
+
+if [ ! -f $source/$commit_from ]; then
+    echo "Cannot read commit from $commit_from"
+    exit 1
+fi
+commit=$(cat $source/$commit_from)
+
+if [ -z $target_url ]; then
+    target_url="$ATC_EXTERNAL_URL/builds/$BUILD_ID"
+fi
+
+api_url="https://projects.garage61.org/api/v1/repos/Garage61/main/statuses/b90c43c236cbba0e9a6f40ef3ff7a45d52e9031a`"
+
+# Create version
+echo "Creating commit status"
+info=$(mktemp -t gitea-checks-resource-release.XXXXXX)
+curl -sSf -H "Authorization: Bearer $token" \
+    -X POST -H "Content-Type: application/json" \
+    -d "{\"context\": $(echo $context | jq -R .), \"description\": $(echo $description | jq -R .), \"state\": $(echo $state | jq -R .), \"target_url\": $(echo $target_url | jq -R .)}" \
+    "${host%/}/api/v1/repos/$organization/$project/statuses/$commit" > $info
+cat $info | jq .
+
+# Output metadata
+created=$(jq -r '.created_at // ""' < $info)
+id=$(jq -r '.id // ""' < $info)
+
+jq -n "{
+    version: {
+        ref: $(echo $id | jq -R .),
+    },
+    metadata: [
+        {
+            name: \"created_at\",
+            value: $(echo $created | jq -R .),
+        }
+    ]
+}" >&3

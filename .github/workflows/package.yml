@@ -1,0 +1,26 @@
+name: Package
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log in to Docker registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: docker.pkg.github.com
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out code
+        uses: actions/checkout@v1
+
+      - name: Build and publish Docker image
+        run: |
+          docker build . -t docker.pkg.github.com/$GITHUB_REPOSITORY/concourse-gitea-checks-resource:latest
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/concourse-gitea-checks-resource:latest
