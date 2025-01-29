@@ -54,6 +54,7 @@ resources:
   - name: myproject-checks
     type: gitea-checks
     source:
+      host: https://...
       token: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       organization: myorg
       project: myproject
