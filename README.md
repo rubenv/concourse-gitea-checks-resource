@@ -1,6 +1,6 @@
 # Concourse Resource for Gitea checks (build status)
 
-Push build status from Concourse to [Gitea](https://github.com/go-gitea/gitea).
+Push build status from [Concourse](https://concourse-ci.org) to [Gitea](https://github.com/go-gitea/gitea).
 
 ## Installing
 
